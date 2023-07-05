@@ -63,7 +63,6 @@
         return
       }
       
-      console.log(baseInfo.fullUrl)
       const beforeLen = performance.getEntriesByName(baseInfo.fullUrl).length
       createTaskBtn.click()
 
@@ -74,57 +73,6 @@
         afterDialogOpen(baseInfo)
       }).catch((err) => {
         console.error(err);
-      })
-      
-
-      return;
-      const time =  window.prompt('请填入子任务时间')
-      if (time === null) {
-        return
-      }
-      const parentKey = document.getElementById('key-val').getAttribute('data-issue-key')
-      const assignee = getCurrUserInfo()
-      if (!parentKey || !parentIssueId) {
-        return alert('父任务不存在')
-      }
-      const matche = parentKey.match(/(.*?)-\d+/)
-      if (!matche) {
-        return alert('项目不存在')
-      }
-      const projectKey = matche[1]
-    
-
-      const todayStr = getCurrDate()
-      const params = {
-        fields:{ 
-          project: { 
-            key: projectKey
-          }, 
-          parent: { 
-            key:  parentKey,
-            id: parentIssueId
-          }, 
-          summary: parentTaskTitle, 
-          description: "???", 
-          issuetype: { 
-            subtask: true,
-            name: '子任务',
-            id: '10500'
-          },
-          assignee,
-          timetracking: {
-            originalEstimate: time,
-            remainingEstimate: time
-          },
-          // 开始日期
-          customfield_10113: todayStr,
-          // 结束日期
-          customfield_10114: todayStr
-        }
-      } 
-      const flag = alert('确定创建？')
-      flag && post(JSON.stringify(params)).then((res) => {
-        console.log(res)
       })
     }
     e.preventDefault();
@@ -144,68 +92,15 @@
     }
   }
 
-  function post(param) {
-    const { p, _resolve, _reject } = promiseHelper()
-    var xhr = new XMLHttpRequest(),
-      method = "POST",
-      url = "http://jira.gdbyway.com/rest/api/2/issue/";
-    xhr.open(method, url, true);
-    xhr.setRequestHeader("Content-Type", "application/json");
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4) {
-        if (xhr.readyState === 4) {
-          if (xhr.status >= 200 && xhr.status < 300) {
-            const json = JSON.parse(xhr.responseText);
-            console.log(json);
-            _resolve(json)
-          } else {
-            console.error('Error: ' + xhr.status);
-            console.error('Response: ' + xhr.responseText);
-            _reject(xhr.responseText)
-          }
-        }
-      }
-    }; 
-    xhr.send(param)
-    return p
-  }
-
   function getCurrDate() {
     const now = new Date();
     const year = now.getFullYear();
-    let month = now.getMonth() + 1; // getMonth() 返回的月份从0开始，所以需要+1
+    let month = now.getMonth() + 1;
     let date = now.getDate();
-    
-    // 如果月份或日期小于10，前面补0
     if (month < 10) month = '0' + month;
     if (date < 10) date = '0' + date;
-    
     const formattedDate = year + '-' + month + '-' + date;
-    
     return formattedDate  
-  }
-
-  function getCurrUserInfo() {
-    const ele = document.getElementById('header-details-user-fullname')
-    if (!ele) {
-      throw new Error('No User Info!')
-    }
-
-    const imgEle = ele.querySelector('img')
-    if (!imgEle) {
-      throw new Error('No User Image Info!')
-    }
-
-    const urlObj = new URL(imgEle.src || '')
-    const key = urlObj.searchParams.get('ownerId')
-    const displayName = ele.getAttribute('data-displayname')
-    const name = ele.getAttribute('data-username')
-    
-    return {
-      key,
-      displayName,
-      name
-    }
   }
 
   function afterDialogOpen(baseInfo) {
