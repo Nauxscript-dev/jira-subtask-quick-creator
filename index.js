@@ -126,6 +126,7 @@
     targetStartInput.value = baseInfo.todayStr
     targetEndInput.value = baseInfo.todayStr
     assignToMeBtn.click()
+    summaryInput.focus()
   }
 
   function checkRequestDone(fullUrl, beforeLen) {
