@@ -6,8 +6,9 @@
 // @author       Nauxscript
 // @homepage     https://github.com/Nauxscript-dev/jira-subtask-quick-creator
 // @match        http://jira.gdbyway.com/browse/*
+// @match        http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=juejin.cn
-// @grant        none
+// @grant        GM_webRequest
 // @run-at       document-end
 // @updateURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
 // ==/UserScript==
@@ -16,7 +17,6 @@
   'use strict';
   const baseRequestUrl = 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
   const defaultTitlePrefix = '前端：'
-
   let isWaiting = false
 
   function getTaskInfo(config) {
@@ -39,6 +39,13 @@
     return taskInfo
   }
 
+  
+  // GM_webRequest([
+    //   { selector: 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*', action: { redirect: { from: "(.*)", to: "$1" } } },
+    // ], function (info, message, details) {
+  //   console.log(info, message, details);
+  // });
+  
   window.addEventListener('keyup' , (e) => {
     // const ctrlKey = e.ctrlKey
     const altKey = e.altKey
@@ -52,20 +59,21 @@
       if (!createTaskBtn) {
         return alert("当前无法创建子任务")
       }
-
+      
       const baseInfo = getTaskInfo({
         baseRequestUrl,
         defaultTitlePrefix
       })
-
+      
       if (baseInfo.targetTime === null) {
         console.error('退出创建!');
         return
       }
       
       const beforeLen = performance.getEntriesByName(baseInfo.fullUrl).length
+      
       createTaskBtn.click()
-
+      
       isWaiting = true
       checkRequestDone(baseInfo.fullUrl, beforeLen).then((msg) => {
         console.log(msg)
