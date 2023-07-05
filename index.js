@@ -18,27 +18,6 @@
   const baseRequestUrl = 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
   const defaultTitlePrefix = '前端：'
   let isWaiting = false
-
-  function getTaskInfo(config) {
-    const targetTime =  window.prompt('请填入子任务时间')
-    
-    const parentLinkEle = document.getElementById('key-val')
-    const parentSummaryEle = document.getElementById('summary-val')
-    const parentIssueId = parentLinkEle.getAttribute('rel')
-    const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
-    const fullUrl = config.baseRequestUrl + parentIssueId 
-    const todayStr = getCurrDate()
-
-    const taskInfo = {
-      fullUrl,
-      parentTaskTitle,
-      todayStr,
-      targetTime
-    }
-
-    return taskInfo
-  }
-
   
   // GM_webRequest([
     //   { selector: 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*', action: { redirect: { from: "(.*)", to: "$1" } } },
@@ -51,7 +30,6 @@
     const altKey = e.altKey
     // alt + ; = … in mac
     if (altKey && e.key === "…") {
-
       if (isWaiting) {
         return alert('请勿频繁操作') 
       }
@@ -86,7 +64,7 @@
     e.preventDefault();
     return false;
   })
-
+  
   const promiseHelper = () => {
     let _resolve, _reject
     const p = new Promise((resolve, reject)=> {
@@ -100,6 +78,26 @@
     }
   }
 
+  function getTaskInfo(config) {
+    const targetTime =  window.prompt('请填入子任务时间')
+    
+    const parentLinkEle = document.getElementById('key-val')
+    const parentSummaryEle = document.getElementById('summary-val')
+    const parentIssueId = parentLinkEle.getAttribute('rel')
+    const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
+    const fullUrl = config.baseRequestUrl + parentIssueId 
+    const todayStr = getCurrDate()
+
+    const taskInfo = {
+      fullUrl,
+      parentTaskTitle,
+      todayStr,
+      targetTime
+    }
+
+    return taskInfo
+  }
+  
   function getCurrDate() {
     const now = new Date();
     const year = now.getFullYear();
