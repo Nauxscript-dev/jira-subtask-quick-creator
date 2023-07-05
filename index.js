@@ -1,6 +1,6 @@
 // ==UserScript==
 // @name         快速创建 Jira 子任务
-// @namespace    https://nauxscript.com 
+// @namespace    https://nauxscript.com
 // @version      0.0.1
 // @description  一个帮助用户在 Jira 任务页面中快速创建子任务的油猴脚本 / A script to help user creating sub task in Jira task web page.
 // @author       Nauxscript
@@ -11,6 +11,7 @@
 // @grant        GM_webRequest
 // @run-at       document-end
 // @updateURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
+// @downloadURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
 // ==/UserScript==
 
 (function(){
@@ -24,7 +25,7 @@
     // ], function (info, message, details) {
   //   console.log(info, message, details);
   // });
-  
+
   window.addEventListener('keyup' , (e) => {
     // const ctrlKey = e.ctrlKey
     const altKey = e.altKey
@@ -33,27 +34,27 @@
       console.log(location.href)
       if (!location.pathname.includes('/browse/')) return
       if (isWaiting) {
-        return alert('请勿频繁操作') 
+        return alert('请勿频繁操作')
       }
       const createTaskBtn = document.getElementById('create-subtask')
       if (!createTaskBtn) {
         return alert("当前无法创建子任务")
       }
-      
+
       const baseInfo = getTaskInfo({
         baseRequestUrl,
         defaultTitlePrefix
       })
-      
+
       if (baseInfo.targetTime === null) {
         console.error('退出创建!');
         return
       }
-      
+
       const beforeLen = performance.getEntriesByName(baseInfo.fullUrl).length
-      
+
       createTaskBtn.click()
-      
+
       isWaiting = true
       checkRequestDone(baseInfo.fullUrl, beforeLen).then((msg) => {
         console.log(msg)
@@ -66,7 +67,7 @@
     e.preventDefault();
     return false;
   })
-  
+
   const promiseHelper = () => {
     let _resolve, _reject
     const p = new Promise((resolve, reject)=> {
@@ -81,13 +82,13 @@
   }
 
   function getTaskInfo(config) {
-    const targetTime =  window.prompt('请填入子任务时间')
-    
+    const targetTime = window.prompt('请填入子任务时间')
+
     const parentLinkEle = document.getElementById('key-val')
     const parentSummaryEle = document.getElementById('summary-val')
     const parentIssueId = parentLinkEle.getAttribute('rel')
     const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
-    const fullUrl = config.baseRequestUrl + parentIssueId 
+    const fullUrl = config.baseRequestUrl + parentIssueId
     const todayStr = getCurrDate()
 
     const taskInfo = {
@@ -99,7 +100,7 @@
 
     return taskInfo
   }
-  
+
   function getCurrDate() {
     const now = new Date();
     const year = now.getFullYear();
@@ -108,7 +109,7 @@
     if (month < 10) month = '0' + month;
     if (date < 10) date = '0' + date;
     const formattedDate = year + '-' + month + '-' + date;
-    return formattedDate  
+    return formattedDate
   }
 
   function afterDialogOpen(baseInfo) {
@@ -132,7 +133,7 @@
     let startTime = Date.now();
     const timer = setInterval(() => {
       let elapsedTime = Date.now() - startTime;
-      if (elapsedTime >= 60000) {  // 60000 ms = 1 minute
+      if (elapsedTime >= 60000) { // 60000 ms = 1 minute
         clearInterval(timer);
         _reject('One minute has passed. Stopping the timer.')
         return
@@ -140,11 +141,11 @@
       console.log('waiting...')
       const newLen = performance.getEntriesByName(fullUrl).length
       if (newLen > beforeLen) {
-        clearInterval(timer) 
+        clearInterval(timer)
         _resolve('done')
       }
     }, 500)
     return p
-  } 
+  }
 
 })()
