@@ -18,7 +18,7 @@
   const baseRequestUrl = 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
   const defaultTitlePrefix = '前端：'
   let isWaiting = false
-  
+
   // GM_webRequest([
     //   { selector: 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*', action: { redirect: { from: "(.*)", to: "$1" } } },
     // ], function (info, message, details) {
@@ -112,7 +112,7 @@
   function afterDialogOpen(baseInfo) {
     const summaryInput = document.getElementById('summary')
     const targetStartInput = document.getElementById('customfield_10113')
-    const targetEndInput = document.getElementById('customfield_10113')
+    const targetEndInput = document.getElementById('customfield_10114')
     const assignToMeBtn = document.getElementById('assign-to-me-trigger')
     const originalestimate = document.getElementById('timetracking_originalestimate')
     const remainingestimate = document.getElementById('timetracking_remainingestimate')
