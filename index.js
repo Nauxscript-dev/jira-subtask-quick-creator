@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name         快速创建 Jira 子任务
-// @namespace    https://nauxscript.com
+// @namespace    https://nauxscript.com 
 // @version      0.0.1
 // @description  一个帮助用户在 Jira 任务页面中快速创建子任务的油猴脚本 / A script to help user creating sub task in Jira task web page.
 // @author       Nauxscript
 // @homepage     https://github.com/Nauxscript-dev/jira-subtask-quick-creator
-// @match        http://jira.gdbyway.com/browse/*
+// @match        *jira.gdbyway.com/*
 // @match        http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*
 // @icon         https://www.google.com/s2/favicons?sz=64&domain=juejin.cn
 // @grant        GM_webRequest
@@ -30,6 +30,8 @@
     const altKey = e.altKey
     // alt + ; = … in mac
     if (altKey && e.key === "…") {
+      console.log(location.href)
+      if (!location.pathname.includes('/browse/')) return
       if (isWaiting) {
         return alert('请勿频繁操作') 
       }
