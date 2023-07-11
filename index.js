@@ -31,8 +31,8 @@
     const altKey = e.altKey
     // alt + ; = … in mac
     if (altKey && e.key === "…") {
-      console.log(location.href)
-      if (!location.pathname.includes('/browse/')) return
+      // console.log(location.href)
+      // if (!location.pathname.includes('/browse/')) return
       if (isWaiting) {
         return alert('请勿频繁操作')
       }
