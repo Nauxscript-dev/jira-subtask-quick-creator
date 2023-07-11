@@ -14,25 +14,27 @@
 // @downloadURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
 // ==/UserScript==
 
-(function(){
+(function () {
   'use strict';
-  const baseRequestUrl = 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
+  const hostName = 'http://jira.gdbyway.com'
+  const dialogUrl = '/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
+  const baseRequestUrl = `${hostName}${dialogUrl}`
   const defaultTitlePrefix = '前端：'
+  let createSubTaskRequestUrl = '/secure/QuickCreateIssue.jspa?decorator=none'
   let isWaiting = false
+  let currTaskInfo = null
 
-  // GM_webRequest([
-    //   { selector: 'http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*', action: { redirect: { from: "(.*)", to: "$1" } } },
-    // ], function (info, message, details) {
-  //   console.log(info, message, details);
-  // });
+  if (!$) {
+    throw new Error('have no jquery')
+  }
 
-  window.addEventListener('keyup' , (e) => {
+  $(document).on('ajaxComplete', onRequest)
+
+  window.addEventListener('keyup', async (e) => {
     // const ctrlKey = e.ctrlKey
     const altKey = e.altKey
     // alt + ; = … in mac
     if (altKey && e.key === "…") {
-      // console.log(location.href)
-      // if (!location.pathname.includes('/browse/')) return
       if (isWaiting) {
         return alert('请勿频繁操作')
       }
@@ -41,49 +43,43 @@
         return alert("当前无法创建子任务")
       }
 
-      const baseInfo = getTaskInfo({
+      currTaskInfo = getTaskInfo({
         baseRequestUrl,
-        defaultTitlePrefix
+        defaultTitlePrefix,
       })
 
-      if (baseInfo.targetTime === null) {
+      if (currTaskInfo.targetTime === null) {
         console.error('退出创建!');
         return
       }
 
-      // wip: auto finish sub task
-      // if (baseInfo.targetTime === 'fuck') {
-      //   const url = 'IP-EMR-8852/transitions?expand=transitions.fields'
-      //   // const url = '102485/transitions'
-      //   post(url, {
-      //     transition: {
-      //       // id: '701'
-      //       id: '21'
-      //     }
-      //   })
-      //   return
-      // }
-
-      const beforeLen = performance.getEntriesByName(baseInfo.fullUrl).length
-
-      createTaskBtn.click()
-
       isWaiting = true
-      checkRequestDone(baseInfo.fullUrl, beforeLen).then((msg) => {
-        console.log(msg)
-        isWaiting = false
-        afterDialogOpen(baseInfo)
-      }).catch((err) => {
-        console.error(err);
-      })
+      createTaskBtn.click()
     }
     e.preventDefault();
     return false;
   })
+  
+
+  function onRequest(event, xhr, setting) {
+    if (setting.url === `${dialogUrl}${currTaskInfo.parentIssueId}` && isWaiting) {
+      console.log('dialog open');
+      afterDialogOpen(currTaskInfo)
+      isWaiting = false
+    }
+
+    if (setting.url === createSubTaskRequestUrl) {
+      const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
+      const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
+      if (parentKey === currTaskInfo.parentIssueKey) {
+        autoDone(currSubTaskKey)        
+      }
+    }
+  }
 
   const promiseHelper = () => {
     let _resolve, _reject
-    const p = new Promise((resolve, reject)=> {
+    const p = new Promise((resolve, reject) => {
       _resolve = resolve
       _reject = reject
     })
@@ -100,6 +96,7 @@
     const parentLinkEle = document.getElementById('key-val')
     const parentSummaryEle = document.getElementById('summary-val')
     const parentIssueId = parentLinkEle.getAttribute('rel')
+    const parentIssueKey = parentLinkEle.getAttribute('data-issue-key')
     const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
     const fullUrl = config.baseRequestUrl + parentIssueId
     const todayStr = getCurrDate()
@@ -108,7 +105,9 @@
       fullUrl,
       parentTaskTitle,
       todayStr,
-      targetTime
+      targetTime,
+      parentIssueId,
+      parentIssueKey
     }
 
     return taskInfo
@@ -142,40 +141,51 @@
     summaryInput.focus()
   }
 
-  function checkRequestDone(fullUrl, beforeLen) {
-    const { p, _resolve, _reject } = promiseHelper()
-    let startTime = Date.now();
-    const timer = setInterval(() => {
-      let elapsedTime = Date.now() - startTime;
-      if (elapsedTime >= 60000) { // 60000 ms = 1 minute
-        clearInterval(timer);
-        _reject('One minute has passed. Stopping the timer.')
-        return
+  async function autoDone(issueKey) {
+    if (!issueKey) return
+    const closeTransitionId = await getTaskTransitions(issueKey)
+    if (!closeTransitionId) {
+      console.error(`子任务【${issueKey}】无法自动关闭`);
+      return
+    }
+    await sendRequest(`issue/${issueKey}/transitions`, 'POST', {
+      transition: {
+        id: closeTransitionId
+      },
+      fields: {
+        resolution: {
+          name: 'Done'
+        }
       }
-      console.log('waiting...')
-      const newLen = performance.getEntriesByName(fullUrl).length
-      if (newLen > beforeLen) {
-        clearInterval(timer)
-        _resolve('done')
-      }
-    }, 500)
-    return p
+    })
+    location.reload(true)
   }
 
-  function post(api, param) {
+  async function getTaskTransitions(issueKey) {
+    const url = `issue/${issueKey}/transitions?expand=transitions.fields`
+    const res = await sendRequest(url)
+    if (res && res.transitions && res.transitions.length) {
+      const transition = res.transitions.find(t => t.name === '关闭任务')
+      return transition.id
+    }
+  }
+
+  function sendRequest(api, method = 'GET', param) {
     const { p, _resolve, _reject } = promiseHelper()
     var xhr = new XMLHttpRequest(),
-      method = "POST",
-      url = `http://jira.gdbyway.com/rest/api/latest/issue/${api}`;
+      url = `${hostName}/rest/api/2/${api}`;
     xhr.open(method, url, true);
     xhr.setRequestHeader("Content-Type", "application/json");
     xhr.onreadystatechange = function () {
       if (xhr.readyState === 4) {
         if (xhr.readyState === 4) {
           if (xhr.status >= 200 && xhr.status < 300) {
-            const json = JSON.parse(xhr.responseText);
-            console.log(json);
-            _resolve(json)
+            let json
+            if (xhr.responseText) {
+              json = JSON.parse(xhr.responseText);
+              console.log(json);
+            }
+            _resolve(json || xhr.responseText)
           } else {
             console.error('Error: ' + xhr.status);
             console.error('Response: ' + xhr.responseText);
@@ -184,8 +194,10 @@
         }
       }
     };
-    xhr.send(JSON.stringify(param))
+    xhr.onerror = function (err) {
+      _reject(err)
+    };
+    xhr.send(param ? JSON.stringify(param) : undefined)
     return p
   }
-
 })()
