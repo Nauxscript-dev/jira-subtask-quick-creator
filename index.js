@@ -51,6 +51,19 @@
         return
       }
 
+      // wip: auto finish sub task
+      // if (baseInfo.targetTime === 'fuck') {
+      //   const url = 'IP-EMR-8852/transitions?expand=transitions.fields'
+      //   // const url = '102485/transitions'
+      //   post(url, {
+      //     transition: {
+      //       // id: '701'
+      //       id: '21'
+      //     }
+      //   })
+      //   return
+      // }
+
       const beforeLen = performance.getEntriesByName(baseInfo.fullUrl).length
 
       createTaskBtn.click()
@@ -146,6 +159,32 @@
         _resolve('done')
       }
     }, 500)
+    return p
+  }
+
+  function post(api, param) {
+    const { p, _resolve, _reject } = promiseHelper()
+    var xhr = new XMLHttpRequest(),
+      method = "POST",
+      url = `http://jira.gdbyway.com/rest/api/latest/issue/${api}`;
+    xhr.open(method, url, true);
+    xhr.setRequestHeader("Content-Type", "application/json");
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        if (xhr.readyState === 4) {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const json = JSON.parse(xhr.responseText);
+            console.log(json);
+            _resolve(json)
+          } else {
+            console.error('Error: ' + xhr.status);
+            console.error('Response: ' + xhr.responseText);
+            _reject(xhr.responseText)
+          }
+        }
+      }
+    };
+    xhr.send(JSON.stringify(param))
     return p
   }
 
