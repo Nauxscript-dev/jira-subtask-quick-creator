@@ -69,6 +69,7 @@
     }
 
     if (setting.url === createSubTaskRequestUrl) {
+    if (setting.url === createSubTaskRequestUrl && currTaskInfo.autoDone === '1') {
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
       const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
       if (parentKey === currTaskInfo.parentIssueKey) {
@@ -91,8 +92,7 @@
   }
 
   function getTaskInfo(config) {
-    const targetTime = window.prompt('请填入子任务时间')
-
+    
     const parentLinkEle = document.getElementById('key-val')
     const parentSummaryEle = document.getElementById('summary-val')
     const parentIssueId = parentLinkEle.getAttribute('rel')
@@ -101,16 +101,47 @@
     const fullUrl = config.baseRequestUrl + parentIssueId
     const todayStr = getCurrDate()
 
+    const inputStr = window.prompt(`
+      输入规则:
+      ------------
+      @<开始时间>@<结束时间>@<c 创建子任务 | e 编辑当前任务>@<是否直接关闭子任务:1 是 | 0 否>@<预估时间>
+      ------------
+      默认使用当天的日期，创建子任务，不自动关闭；
+      不做修改请直接在最后输入预估时间
+    `,`@${todayStr}@${todayStr}@c@0@`)
+
+    inputInfo = normalizeInput()
+
     const taskInfo = {
       fullUrl,
       parentTaskTitle,
-      todayStr,
-      targetTime,
+      targetTime: inputStr,
       parentIssueId,
-      parentIssueKey
+      parentIssueKey,
+      ...inputInfo
     }
 
     return taskInfo
+  }
+
+  function normalizeInput(input) {
+    const [startTimeStr, endTimeStr, mode, autoDone, estimateTime] = input.split('@');
+
+    if (!['c', 'e'].includes(mode)) {
+      throw new Error('Invalid mode');
+    }
+
+    if (!['0', '1'].includes(autoDone)) {
+      throw new Error('Invalid autodone');
+    } 
+
+    return {
+      mode,
+      autoDone,
+      estimateTime,
+      startTime: startTimeStr.replace(/\s+/g, ''),
+      endTime: endTimeStr.replace(/\s+/g, ''),
+    };
   }
 
   function getCurrDate() {
@@ -133,10 +164,10 @@
     const remainingestimate = document.getElementById('timetracking_remainingestimate')
 
     summaryInput.value = baseInfo.parentTaskTitle
-    originalestimate.value = baseInfo.targetTime
-    remainingestimate.value = baseInfo.targetTime
-    targetStartInput.value = baseInfo.todayStr
-    targetEndInput.value = baseInfo.todayStr
+    originalestimate.value = baseInfo.estimateTime
+    remainingestimate.value = baseInfo.estimateTime
+    targetStartInput.value = baseInfo.startTime
+    targetEndInput.value = baseInfo.endTime
     assignToMeBtn.click()
     summaryInput.focus()
   }
