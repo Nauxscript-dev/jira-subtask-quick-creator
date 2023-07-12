@@ -68,7 +68,9 @@
       isWaiting = false
     }
 
-    if (setting.url === createSubTaskRequestUrl) {
+    // wip: edit current task info
+    // if ()
+
     if (setting.url === createSubTaskRequestUrl && currTaskInfo.autoDone === '1') {
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
       const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
