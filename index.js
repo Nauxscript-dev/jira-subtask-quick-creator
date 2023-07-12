@@ -64,7 +64,7 @@
   function onRequest(event, xhr, setting) {
     if (setting.url === `${dialogUrl}${currTaskInfo.parentIssueId}` && isWaiting) {
       console.log('dialog open');
-      afterDialogOpen(currTaskInfo)
+      createSubTask(currTaskInfo)
       isWaiting = false
     }
 
@@ -124,7 +124,7 @@
     return formattedDate
   }
 
-  function afterDialogOpen(baseInfo) {
+  function createSubTask(baseInfo) {
     const summaryInput = document.getElementById('summary')
     const targetStartInput = document.getElementById('customfield_10113')
     const targetEndInput = document.getElementById('customfield_10114')
