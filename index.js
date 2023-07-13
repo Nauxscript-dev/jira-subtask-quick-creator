@@ -62,7 +62,7 @@
   
 
   function onRequest(event, xhr, setting) {
-    if (setting.url === `${dialogUrl}${currTaskInfo.parentIssueId}` && isWaiting) {
+    if (setting.url === `${dialogUrl}${currTaskInfo?.parentIssueId}` && isWaiting) {
       console.log('dialog open');
       createSubTask(currTaskInfo)
       isWaiting = false
@@ -75,7 +75,7 @@
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
       const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
       if (parentKey === currTaskInfo.parentIssueKey) {
-        autoDone(currSubTaskKey)        
+        autoDone(currSubTaskKey)
       }
     }
   }
@@ -112,7 +112,7 @@
       不做修改请直接在最后输入预估时间
     `,`@${todayStr}@${todayStr}@c@0@`)
 
-    inputInfo = normalizeInput()
+    const inputInfo = normalizeInput(inputStr)
 
     const taskInfo = {
       fullUrl,
@@ -127,7 +127,13 @@
   }
 
   function normalizeInput(input) {
-    const [startTimeStr, endTimeStr, mode, autoDone, estimateTime] = input.split('@');
+    let parseItems = input.split('@')
+    
+    // remove first item cause' it is a invalid param
+    parseItems.shift()
+
+    parseItems = parseItems.map(item => !item ? '' : item)
+    const [startTimeStr, endTimeStr, mode, autoDone, estimateTime] = parseItems
 
     if (!['c', 'e'].includes(mode)) {
       throw new Error('Invalid mode');
@@ -158,6 +164,11 @@
   }
 
   function createSubTask(baseInfo) {
+    // init mutationObserver to spy on dialog close 
+    observerDialog()
+
+    console.log(baseInfo);
+
     const summaryInput = document.getElementById('summary')
     const targetStartInput = document.getElementById('customfield_10113')
     const targetEndInput = document.getElementById('customfield_10114')
@@ -172,6 +183,31 @@
     targetEndInput.value = baseInfo.endTime
     assignToMeBtn.click()
     summaryInput.focus()
+
+  }
+
+  function observerDialog() {
+    const dialogContainer = document.getElementById('create-subtask-dialog')
+    // 创建一个观察器实例并传入回调函数
+    const observer = new MutationObserver(function(mutations) {
+      mutations.forEach(function(mutation) {
+        if (mutation.removedNodes) {
+          for (let i = 0; i < mutation.removedNodes.length; i++) {
+            if (mutation.removedNodes[i] === dialogContainer) {
+              console.log('Node removed!');
+              observer.disconnect();  // 如果节点被移除，停止观察
+              isWaiting = false
+            }
+          }
+        }
+      });    
+    });
+
+    // 配置观察选项:
+    const config = { attributes: true, childList: true, subtree: true };
+
+    // 传入目标节点和观察选项
+    observer.observe(document.body, config);
   }
 
   async function autoDone(issueKey) {
