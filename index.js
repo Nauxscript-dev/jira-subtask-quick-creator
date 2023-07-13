@@ -48,8 +48,7 @@
         defaultTitlePrefix,
       })
 
-      if (currTaskInfo.targetTime === null) {
-        console.error('退出创建!');
+      if (!currTaskInfo) {
         return
       }
 
@@ -112,6 +111,12 @@
       不做修改请直接在最后输入预估时间
     `,`@${todayStr}@${todayStr}@c@0@`)
 
+    if (!inputStr) {
+      isWaiting = false
+      console.error('退出创建!');
+      return
+    }
+
     const inputInfo = normalizeInput(inputStr)
 
     const taskInfo = {
@@ -128,7 +133,7 @@
 
   function normalizeInput(input) {
     let parseItems = input.split('@')
-    
+
     // remove first item cause' it is a invalid param
     parseItems.shift()
 
