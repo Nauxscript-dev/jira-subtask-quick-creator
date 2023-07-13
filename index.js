@@ -6,9 +6,6 @@
 // @author       Nauxscript
 // @homepage     https://github.com/Nauxscript-dev/jira-subtask-quick-creator
 // @match        *jira.gdbyway.com/*
-// @match        http://jira.gdbyway.com/secure/QuickCreateIssue!default.jspa*
-// @icon         https://www.google.com/s2/favicons?sz=64&domain=juejin.cn
-// @grant        GM_webRequest
 // @run-at       document-end
 // @updateURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
 // @downloadURL    https://github.com/Nauxscript-dev/jira-subtask-quick-creator/index.js
@@ -17,8 +14,9 @@
 (function () {
   'use strict';
   const hostName = 'http://jira.gdbyway.com'
-  const dialogUrl = '/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
-  const baseRequestUrl = `${hostName}${dialogUrl}`
+  const createTaskDialogUrl = '/secure/QuickCreateIssue!default.jspa?decorator=none&parentIssueId='
+  const editTaskDialogUrl = '/secure/QuickEditIssue!default.jspa?issueId='
+  const baseRequestUrl = `${hostName}${createTaskDialogUrl}`
   const defaultTitlePrefix = '前端：'
   let createSubTaskRequestUrl = '/secure/QuickCreateIssue.jspa?decorator=none'
   let isWaiting = false
@@ -39,8 +37,19 @@
         return alert('请勿频繁操作')
       }
       const createTaskBtn = document.getElementById('create-subtask')
+      const editTaskBtn = document.getElementById('edit-issue') 
+      
       if (!createTaskBtn) {
-        return alert("当前无法创建子任务")
+        console.error('当前无法创建子任务');
+      }
+
+      if (!editTaskBtn) {
+        console.error('无法编辑当前任务');
+      }
+
+      if (!createTaskBtn && !editTaskBtn) {
+        console.error('无法创建或编辑任务'); 
+        return 
       }
 
       currTaskInfo = getTaskInfo({
@@ -51,9 +60,27 @@
       if (!currTaskInfo) {
         return
       }
-
       isWaiting = true
-      createTaskBtn.click()
+      if (currTaskInfo.mode === 'c') {
+        // create
+        if (!createTaskBtn) {
+          alert('当前无法创建子任务')
+          isWaiting = false
+          return
+        }
+
+        createTaskBtn.click()
+      } else if (currTaskInfo.mode === 'e') {
+        // edit
+        if (!editTaskBtn) {
+          alert('无法编辑当前任务')
+          isWaiting = false
+          return
+        }
+        editTaskBtn.click()
+      } else {
+        isWaiting = false
+      }
     }
     e.preventDefault();
     return false;
@@ -61,14 +88,19 @@
   
 
   function onRequest(event, xhr, setting) {
-    if (setting.url === `${dialogUrl}${currTaskInfo?.parentIssueId}` && isWaiting) {
-      console.log('dialog open');
+    if (setting.url === `${createTaskDialogUrl}${currTaskInfo?.parentIssueId}` && isWaiting) {
+      console.log('create task dialog open');
       createSubTask(currTaskInfo)
       isWaiting = false
     }
 
-    // wip: edit current task info
-    // if ()
+    // edit current task info
+    if (setting.url === `${editTaskDialogUrl}${currTaskInfo?.parentIssueId}&decorator=none` && isWaiting) {
+      console.log('edit task dialog open');
+      // wip
+      editTask(currTaskInfo)
+      isWaiting
+    }
 
     if (setting.url === createSubTaskRequestUrl && currTaskInfo.autoDone === '1') {
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
@@ -99,7 +131,6 @@
     const parentIssueId = parentLinkEle.getAttribute('rel')
     const parentIssueKey = parentLinkEle.getAttribute('data-issue-key')
     const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
-    const fullUrl = config.baseRequestUrl + parentIssueId
     const todayStr = getCurrDate()
 
     const inputStr = window.prompt(`
@@ -120,7 +151,6 @@
     const inputInfo = normalizeInput(inputStr)
 
     const taskInfo = {
-      fullUrl,
       parentTaskTitle,
       targetTime: inputStr,
       parentIssueId,
@@ -170,7 +200,7 @@
 
   function createSubTask(baseInfo) {
     // init mutationObserver to spy on dialog close 
-    observerDialog()
+    observerDialog('create-subtask-dialog')
 
     console.log(baseInfo);
 
@@ -188,11 +218,28 @@
     targetEndInput.value = baseInfo.endTime
     assignToMeBtn.click()
     summaryInput.focus()
-
   }
 
-  function observerDialog() {
-    const dialogContainer = document.getElementById('create-subtask-dialog')
+  function editTask(baseInfo) {
+    // init mutationObserver to spy on dialog close 
+    observerDialog('edit-issue-dialog')
+
+    const summaryInput = document.getElementById('summary')
+    const targetStartInput = document.getElementById('customfield_10113')
+    const targetEndInput = document.getElementById('customfield_10114')
+    const originalestimate = document.getElementById('timetracking_originalestimate')
+    const remainingestimate = document.getElementById('timetracking_remainingestimate')
+
+    originalestimate.value = baseInfo.estimateTime
+    remainingestimate.value = baseInfo.estimateTime
+    targetStartInput.value = baseInfo.startTime
+    targetEndInput.value = baseInfo.endTime
+    summaryInput.focus()
+  }
+
+  function observerDialog(id) {
+    const dialogContainer = document.getElementById(id)
+    if (!dialogContainer) return
     // 创建一个观察器实例并传入回调函数
     const observer = new MutationObserver(function(mutations) {
       mutations.forEach(function(mutation) {
