@@ -31,7 +31,14 @@
     const altKey = e.altKey
     // alt + ; = … in mac
     if (altKey && ['…', ';', '；'].includes(e.key)) {
-      if (isWaiting) {
+      basicProcess()
+    }
+    e.preventDefault();
+    return false;
+  })
+  
+  function basicProcess() {
+    if (isWaiting) {
         return alert('请勿频繁操作')
       }
       const createTaskBtn = document.getElementById('create-subtask')
@@ -79,17 +86,14 @@
       } else {
         isWaiting = false
       }
-    }
-    e.preventDefault();
-    return false;
-  })
-  
+  }
 
   function onRequest(event, xhr, setting) {
     if (setting.url === `${createTaskDialogUrl}${currTaskInfo?.parentIssueId}` && isWaiting) {
       console.log('create task dialog open');
       createSubTask(currTaskInfo)
       isWaiting = false
+      return
     }
 
     // edit current task info
@@ -98,6 +102,7 @@
       // wip
       editTask(currTaskInfo)
       isWaiting
+      return
     }
 
     if (setting.url === createSubTaskRequestUrl && currTaskInfo.autoDone === '1') {
@@ -106,6 +111,66 @@
       if (parentKey === currTaskInfo.parentIssueKey) {
         autoDone(currSubTaskKey)
       }
+      return
+    }
+    if (setting.url.includes('AjaxIssueEditAction!default.jspa')) {
+      insertOperateBtns()
+      console.log('fuck');
+    }
+  }
+
+  function insertOperateBtns() {
+    const createTaskBtn = document.getElementById('create-subtask')
+    const editTaskBtn = document.getElementById('edit-issue')   
+    const todayStr = getCurrDate()
+
+    if (editTaskBtn) {
+      const quickEditBtn = document.createElement('div')
+      quickEditBtn.id = 'quick-edit-btn'
+      quickEditBtn.classList.add('aui-button')
+      quickEditBtn
+      const icon = document.createElement('span')
+      icon.className = 'icon aui-icon aui-icon-small aui-iconfont-edit'
+      const text = document.createElement('span')
+      text.innerText = '快速编辑'
+
+      quickEditBtn.append(icon)
+      quickEditBtn.append(text)
+      quickEditBtn.addEventListener('click', () => {
+        currTaskInfo = getTaskInfo({
+          baseRequestUrl,
+          defaultTitlePrefix,
+        }, `@${todayStr}@${todayStr}@e@0@`)
+        if (!currTaskInfo) {
+          return
+        }
+        isWaiting = true
+        editTaskBtn.click()
+      })
+      editTaskBtn.parentNode.insertBefore(quickEditBtn, editTaskBtn.nextSibling)
+    }
+
+    if (createTaskBtn) { 
+      const c = document.getElementById('opsbar-opsbar-transitions')
+      if (!c) return 
+      const quickAddSubTaskBtn = document.createElement('div')
+      quickAddSubTaskBtn.id = 'quick-add-sub-task-btn'
+      quickAddSubTaskBtn.classList.add('aui-button')
+      const text = document.createElement('span')
+      text.innerText = '快速添加子任务'
+      quickAddSubTaskBtn.append(text)
+      quickAddSubTaskBtn.addEventListener('click', () => {
+        currTaskInfo = getTaskInfo({
+          baseRequestUrl,
+          defaultTitlePrefix,
+        }, `@${todayStr}@${todayStr}@c@0@`)
+        if (!currTaskInfo) {
+          return
+        }
+        isWaiting = true
+        createTaskBtn.click()
+      })
+      c.append(quickAddSubTaskBtn)
     }
   }
 
@@ -122,7 +187,7 @@
     }
   }
 
-  function getTaskInfo(config) {
+  function getTaskInfo(config, defaultStr = '') {
     
     const parentLinkEle = document.getElementById('key-val')
     const parentSummaryEle = document.getElementById('summary-val')
@@ -130,7 +195,6 @@
     const parentIssueKey = parentLinkEle.getAttribute('data-issue-key')
     const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
     const todayStr = getCurrDate()
-
     const inputStr = window.prompt(`
       输入规则:
       ------------
@@ -138,8 +202,8 @@
       ------------
       默认使用当天的日期，创建子任务，不自动关闭；
       不做修改请直接在最后输入预估时间
-    `,`@${todayStr}@${todayStr}@c@0@`)
-
+    `,defaultStr || `@${todayStr}@${todayStr}@c@0@`)
+    
     if (!inputStr) {
       isWaiting = false
       console.error('退出创建!');
