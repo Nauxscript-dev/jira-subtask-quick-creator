@@ -30,7 +30,7 @@
     // const ctrlKey = e.ctrlKey
     const altKey = e.altKey
     // alt + ; = … in mac
-    if (altKey && e.key === "…") {
+    if (altKey && ['…', ';', '；'].includes(e.key)) {
       if (isWaiting) {
         return alert('请勿频繁操作')
       }
