@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         快速创建 Jira 子任务
 // @license      MIT
-// @version      0.0.4
+// @version      0.0.5
 // @description  一个帮助用户在 Jira 任务页面中快速创建子任务的油猴脚本 / A script to help user creating sub task in Jira task web page.
 // @author       Nauxscript
 // @match        *jira.gdbyway.com/*
