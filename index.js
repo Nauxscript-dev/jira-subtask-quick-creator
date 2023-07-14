@@ -24,6 +24,10 @@
     throw new Error('have no jquery')
   }
 
+  
+  const quickAddSubTaskBtn = createQuickAddBtn();
+  const quickEditBtn = createEditBtn();
+
   $(document).on('ajaxComplete', onRequest)
 
   window.addEventListener('keyup', async (e) => {
@@ -122,56 +126,67 @@
   function insertOperateBtns() {
     const createTaskBtn = document.getElementById('create-subtask')
     const editTaskBtn = document.getElementById('edit-issue')   
-    const todayStr = getCurrDate()
 
     if (editTaskBtn) {
-      const quickEditBtn = document.createElement('div')
-      quickEditBtn.id = 'quick-edit-btn'
-      quickEditBtn.classList.add('aui-button')
-      quickEditBtn
-      const icon = document.createElement('span')
-      icon.className = 'icon aui-icon aui-icon-small aui-iconfont-edit'
-      const text = document.createElement('span')
-      text.innerText = '快速编辑'
-
-      quickEditBtn.append(icon)
-      quickEditBtn.append(text)
-      quickEditBtn.addEventListener('click', () => {
-        currTaskInfo = getTaskInfo({
-          baseRequestUrl,
-          defaultTitlePrefix,
-        }, `@${todayStr}@${todayStr}@e@0@`)
-        if (!currTaskInfo) {
-          return
-        }
-        isWaiting = true
-        editTaskBtn.click()
-      })
       editTaskBtn.parentNode.insertBefore(quickEditBtn, editTaskBtn.nextSibling)
     }
 
     if (createTaskBtn) { 
       const c = document.getElementById('opsbar-opsbar-transitions')
       if (!c) return 
-      const quickAddSubTaskBtn = document.createElement('div')
-      quickAddSubTaskBtn.id = 'quick-add-sub-task-btn'
-      quickAddSubTaskBtn.classList.add('aui-button')
-      const text = document.createElement('span')
-      text.innerText = '快速添加子任务'
-      quickAddSubTaskBtn.append(text)
-      quickAddSubTaskBtn.addEventListener('click', () => {
-        currTaskInfo = getTaskInfo({
-          baseRequestUrl,
-          defaultTitlePrefix,
-        }, `@${todayStr}@${todayStr}@c@0@`)
-        if (!currTaskInfo) {
-          return
-        }
-        isWaiting = true
-        createTaskBtn.click()
-      })
       c.append(quickAddSubTaskBtn)
     }
+  }
+
+  function createEditBtn() {
+    const _quickEditBtn = document.createElement('div');
+    _quickEditBtn.id = 'quick-edit-btn';
+    _quickEditBtn.classList.add('aui-button');
+    _quickEditBtn;
+    const icon = document.createElement('span');
+    icon.className = 'icon aui-icon aui-icon-small aui-iconfont-edit';
+    const text = document.createElement('span');
+    text.innerText = '快速编辑';
+    const todayStr = getCurrDate()
+
+    _quickEditBtn.append(icon);
+    _quickEditBtn.append(text);
+    _quickEditBtn.addEventListener('click', () => {
+      const editTaskBtn = document.getElementById('edit-issue')  
+      currTaskInfo = getTaskInfo({
+        baseRequestUrl,
+        defaultTitlePrefix,
+      }, `@${todayStr}@${todayStr}@e@0@`);
+      if (!currTaskInfo) {
+        return;
+      }
+      isWaiting = true;
+      editTaskBtn.click();
+    });
+    return _quickEditBtn;
+  }
+
+  function createQuickAddBtn() {
+    const _quickAddSubTaskBtn = document.createElement('div');
+    _quickAddSubTaskBtn.id = 'quick-add-sub-task-btn';
+    _quickAddSubTaskBtn.classList.add('aui-button');
+    const todayStr = getCurrDate()
+    const text = document.createElement('span');
+    text.innerText = '快速添加子任务';
+    _quickAddSubTaskBtn.append(text);
+    _quickAddSubTaskBtn.addEventListener('click', () => {
+      const createTaskBtn = document.getElementById('create-subtask')
+      currTaskInfo = getTaskInfo({
+        baseRequestUrl,
+        defaultTitlePrefix,
+      }, `@${todayStr}@${todayStr}@c@0@`);
+      if (!currTaskInfo) {
+        return;
+      }
+      isWaiting = true;
+      createTaskBtn.click();
+    });
+    return _quickAddSubTaskBtn;
   }
 
   const promiseHelper = () => {
