@@ -7,11 +7,26 @@ A script to help user creating sub task in Jira task web page.
 
 ## Install
 
+⚠️注意：安装该脚本前请先安装[**篡改猴（即油猴）**](https://www.tampermonkey.net/)插件，该插件可通过 chrome 插件商店（需代理）或 [篡改猴官网](https://www.tampermonkey.net/)下载。
+
+安装本脚本有以下两种方法：
+
+1. 通过 [Greasy Fork](https://greasyfork.org/zh-CN/scripts/470730-%E5%BF%AB%E9%80%9F%E5%88%9B%E5%BB%BA-jira-%E5%AD%90%E4%BB%BB%E5%8A%A1) 安装，后续更新更方便（推荐）；
+2. 在篡改猴插件中新建脚本，把 [该脚本内容](./index.js) 复制进去，保存，启用。
+
 ## Setup
 
 ## Usage
 
-默认注入快捷键 `option ⌥` + `;`，唤起弹窗输入命令进行一系列为了登记公司的操作。
+### 快捷键及页面按扭
+
+- MacOS: `option ⌥` + `;`
+- Window: `alt` + `;`
+- 注入页面 `快速编辑` 按钮
+- 注入页面 `快速编辑子任务` 按钮
+
+通过快捷键或注入按钮唤起弹窗输入命令进行一系列为了登记公司的操作。
+
 ### 输入规则
 
 `@<开始时间>@<结束时间>@<模式>@<创建后关闭>@<预估时间>`;
