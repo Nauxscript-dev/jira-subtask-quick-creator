@@ -109,16 +109,16 @@
       return
     }
 
-    if (setting.url === createSubTaskRequestUrl && ['1', '2'].includes(currTaskInfo.autoDone)) {
+    if (setting.url === createSubTaskRequestUrl && ['1', '2'].includes(currTaskInfo.switchStatus)) {
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
       const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
       if (parentKey === currTaskInfo.parentIssueKey) {
 
-        if (currTaskInfo.autoDone === '1') {
+        if (currTaskInfo.switchStatus === '1') {
           autoDone(currSubTaskKey)
         }
 
-        if (currTaskInfo.autoDone === '2') {
+        if (currTaskInfo.switchStatus === '2') {
           autoDoing(currSubTaskKey)
         }
       }
@@ -220,7 +220,7 @@
     const inputStr = window.prompt(`
       输入规则:
       ------------
-      @<开始时间>@<结束时间>@<c 创建子任务 | e 编辑当前任务>@<是否直接关闭子任务:1 是 | 0 否>@<预估时间>
+      @<开始时间>@<结束时间>@<c 创建子任务 | e 编辑当前任务>@<创建子任务后切换状态:0 不切换状态 | 1 切换到已完成 | 2 切换到处理中>@<预估时间>
       ------------
       默认使用当天的日期，创建子任务，不自动关闭；
       不做修改请直接在最后输入预估时间
@@ -252,19 +252,19 @@
     parseItems.shift()
 
     parseItems = parseItems.map(item => !item ? '' : item)
-    const [startTimeStr, endTimeStr, mode, autoDone, estimateTime] = parseItems
+    const [startTimeStr, endTimeStr, mode, switchStatus, estimateTime] = parseItems
 
     if (!['c', 'e'].includes(mode)) {
       throw new Error('Invalid mode');
     }
 
-    if (!['0', '1', '2'].includes(autoDone)) {
-      throw new Error('Invalid autodone');
+    if (!['0', '1', '2'].includes(switchStatus)) {
+      throw new Error('Invalid switchStatus');
     } 
 
     return {
       mode,
-      autoDone,
+      switchStatus,
       estimateTime,
       startTime: startTimeStr.replace(/\s+/g, ''),
       endTime: endTimeStr.replace(/\s+/g, ''),
