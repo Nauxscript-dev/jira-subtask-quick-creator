@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         快速创建 Jira 子任务
 // @license      MIT
-// @version      0.0.5
+// @version      0.0.6
 // @description  一个帮助用户在 Jira 任务页面中快速创建子任务的油猴脚本 / A script to help user creating sub task in Jira task web page.
 // @author       Nauxscript
 // @match        *jira.gdbyway.com/*
@@ -109,11 +109,18 @@
       return
     }
 
-    if (setting.url === createSubTaskRequestUrl && currTaskInfo.autoDone === '1') {
+    if (setting.url === createSubTaskRequestUrl && ['1', '2'].includes(currTaskInfo.autoDone)) {
       const parentKey = xhr.responseJSON?.createdIssueDetails?.fields?.parent?.key
       const currSubTaskKey = xhr.responseJSON?.createdIssueDetails?.key
       if (parentKey === currTaskInfo.parentIssueKey) {
-        autoDone(currSubTaskKey)
+
+        if (currTaskInfo.autoDone === '1') {
+          autoDone(currSubTaskKey)
+        }
+
+        if (currTaskInfo.autoDone === '2') {
+          autoDoing(currSubTaskKey)
+        }
       }
       return
     }
@@ -251,7 +258,7 @@
       throw new Error('Invalid mode');
     }
 
-    if (!['0', '1'].includes(autoDone)) {
+    if (!['0', '1', '2'].includes(autoDone)) {
       throw new Error('Invalid autodone');
     } 
 
@@ -339,33 +346,43 @@
     observer.observe(document.body, config);
   }
 
-  async function autoDone(issueKey) {
+  async function autoTransition(issueKey, condition, title, extendData = {}) {
     if (!issueKey) return
-    const closeTransitionId = await getTaskTransitions(issueKey)
-    if (!closeTransitionId) {
-      console.error(`子任务【${issueKey}】无法自动关闭`);
+    const transitionId = await getTaskTransitionId(issueKey, condition)
+    if (!transitionId) {
+      console.error(`子任务【${issueKey}】无法${title}`);
       return
     }
     await sendRequest(`issue/${issueKey}/transitions`, 'POST', {
       transition: {
-        id: closeTransitionId
+        id: transitionId 
       },
+      ...extendData
+    })
+    location.reload(true)
+  }
+
+  async function getTaskTransitionId(issueKey, condition) {
+    const url = `issue/${issueKey}/transitions?expand=transitions.fields`
+    const res = await sendRequest(url)
+    if (res && res.transitions && res.transitions.length) {
+      const transition = res.transitions.find(condition)
+      return transition.id
+    }
+  }
+
+  function autoDoing(issueKey) {
+    autoTransition(issueKey, (transition) => transition.name === '处理任务', '自动进行')
+  }
+
+  function autoDone(issueKey) {
+    autoTransition(issueKey, (transition) => transition.name === '关闭任务', '自动关闭', {
       fields: {
         resolution: {
           name: 'Done'
         }
       }
     })
-    location.reload(true)
-  }
-
-  async function getTaskTransitions(issueKey) {
-    const url = `issue/${issueKey}/transitions?expand=transitions.fields`
-    const res = await sendRequest(url)
-    if (res && res.transitions && res.transitions.length) {
-      const transition = res.transitions.find(t => t.name === '关闭任务')
-      return transition.id
-    }
   }
 
   function sendRequest(api, method = 'GET', param) {
