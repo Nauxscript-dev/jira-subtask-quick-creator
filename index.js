@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         快速创建 Jira 子任务
 // @license      MIT
-// @version      0.0.6
+// @version      0.0.7
 // @description  一个帮助用户在 Jira 任务页面中快速创建子任务的油猴脚本 / A script to help user creating sub task in Jira task web page.
 // @author       Nauxscript
 // @match        *jira.gdbyway.com/*
@@ -220,11 +220,11 @@
     const inputStr = window.prompt(`
       输入规则:
       ------------
-      @<开始时间>@<结束时间>@<c 创建子任务 | e 编辑当前任务>@<创建子任务后切换状态:0 不切换状态 | 1 切换到已完成 | 2 切换到处理中>@<预估时间>
+      @[<正整数>，0/1/-1对应为今天/明天/昨天，如此类推 | <开始时间>;<结束时间>]@<c 创建子任务 | e 编辑当前任务>@<创建子任务后切换状态:0 不切换状态 | 1 切换到已完成 | 2 切换到处理中>@<预估时间>
       ------------
       默认使用当天的日期，创建子任务，不自动关闭；
       不做修改请直接在最后输入预估时间
-    `,defaultStr || `@${todayStr}@${todayStr}@c@0@`)
+    `,defaultStr || `@[${todayStr};${todayStr}]@c@0@`)
     
     if (!inputStr) {
       isWaiting = false
@@ -252,7 +252,8 @@
     parseItems.shift()
 
     parseItems = parseItems.map(item => !item ? '' : item)
-    const [startTimeStr, endTimeStr, mode, switchStatus, estimateTime] = parseItems
+    const [timeStr, mode, switchStatus, estimateTime] = parseItems
+    const [startTimeStr, endTimeStr] = normalizeTime(timeStr)
 
     if (!['c', 'e'].includes(mode)) {
       throw new Error('Invalid mode');
@@ -271,14 +272,34 @@
     };
   }
 
+  function normalizeTime(timeStr) {
+    if (timeStr[0] === '[' && timeStr[timeStr.length - 1] === ']') {
+      const res = timeStr.match(/(?<=\[).*(?=\])/gm)
+      return res[0].split(';')
+    }
+    const dayNum = Number(timeStr)
+    if (isNaN(dayNum)) {
+      const msg = '任务时间格式有误！'
+      alert(msg) 
+      throw new Error(msg)
+    }
+    const dateStr = getFullDate(dayNum)
+    return [dateStr, dateStr] 
+  }
+
   function getCurrDate() {
-    const now = new Date();
-    const year = now.getFullYear();
-    let month = now.getMonth() + 1;
-    let date = now.getDate();
+    return getFullDate()
+  }
+
+  function getFullDate(offset = 0) {
+    const date = new Date();
+    date.setDate(date.getDate() + offset);
+    const year = date.getFullYear();
+    let month = date.getMonth() + 1;
+    let day = date.getDate();
     if (month < 10) month = '0' + month;
-    if (date < 10) date = '0' + date;
-    const formattedDate = year + '-' + month + '-' + date;
+    if (day < 10) day = '0' + day;
+    const formattedDate = year + '-' + month + '-' + day;
     return formattedDate
   }
 
