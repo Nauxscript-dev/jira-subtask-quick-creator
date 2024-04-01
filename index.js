@@ -182,7 +182,7 @@
       currTaskInfo = getTaskInfo({
         baseRequestUrl,
         defaultTitlePrefix,
-      }, `@${todayStr}@${todayStr}@e@0@`);
+      }, `@[${todayStr};${todayStr}]@c@0@`);
       if (!currTaskInfo) {
         return;
       }
@@ -205,7 +205,7 @@
       currTaskInfo = getTaskInfo({
         baseRequestUrl,
         defaultTitlePrefix,
-      }, `@${todayStr}@${todayStr}@c@0@`);
+      }, `@[${todayStr};${todayStr}]@c@0@`);
       if (!currTaskInfo) {
         return;
       }
