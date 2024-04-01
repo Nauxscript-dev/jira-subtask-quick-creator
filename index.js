@@ -23,7 +23,6 @@
   if (!$) {
     throw new Error('have no jquery')
   }
-
   
   const quickAddSubTaskBtn = createQuickAddBtn();
   const quickEditBtn = createEditBtn();
@@ -92,9 +91,29 @@
       }
   }
 
+  const componentRegExpStrGennerator = (title) => `(?<=title="${title}"value=").*(?=")`
+  const sourceRegExpStrGennerator = (title) => `(?<=value=").*(?=">${title}<)`
+
+  function matching(str, RegExpStr) {
+    const regExpStr = new RegExp(RegExpStr, 'gm')
+    const normalizeStr = str.replaceAll(' ', '')
+    const id = normalizeStr.match(regExpStr)   
+    return id
+  }
+
   function onRequest(event, xhr, setting) {
     if (setting.url === `${createTaskDialogUrl}${currTaskInfo?.parentIssueId}` && isWaiting) {
-      console.log('create task dialog open');
+      console.log('create task dialog open', xhr.responseJSON);
+      xhr.responseJSON.fields.forEach(field => {
+        if (field.label === '模块') {
+          const id = matching(field.editHtml, componentRegExpStrGennerator(currTaskInfo.componentText)) || []
+          currTaskInfo.componentId = id[0] || ''
+        }
+        if (field.label === '问题来源') {
+          const id = matching(field.editHtml, sourceRegExpStrGennerator(currTaskInfo.sourceText)) || []
+          currTaskInfo.sourceId = id[0] || ''
+        }
+      })
       createSubTask(currTaskInfo)
       isWaiting = false
       return
@@ -216,6 +235,13 @@
     const parentIssueId = parentLinkEle.getAttribute('rel')
     const parentIssueKey = parentLinkEle.getAttribute('data-issue-key')
     const parentTaskTitle = config.defaultTitlePrefix + parentSummaryEle.innerText
+
+    // get the a tag inner text in a span with id=components-field
+    const componentText = document.getElementById('components-field')?.querySelector('a')?.innerText || '无'
+    const sourceText = document.getElementById('customfield_10502-val')?.innerText || '无（不需填问题来源时选择）'
+    const componentId = ''
+    const sourceId = ''
+
     const todayStr = getCurrDate()
     const inputStr = window.prompt(`
       输入规则:
@@ -239,6 +265,10 @@
       targetTime: inputStr,
       parentIssueId,
       parentIssueKey,
+      componentText,
+      componentId,
+      sourceText,
+      sourceId,
       ...inputInfo
     }
 
@@ -315,14 +345,33 @@
     const assignToMeBtn = document.getElementById('assign-to-me-trigger')
     const originalestimate = document.getElementById('timetracking_originalestimate')
     const remainingestimate = document.getElementById('timetracking_remainingestimate')
+    const sourceSelect = document.getElementById('customfield_10502')
 
     summaryInput.value = baseInfo.parentTaskTitle
     originalestimate.value = baseInfo.estimateTime
     remainingestimate.value = baseInfo.estimateTime
     targetStartInput.value = baseInfo.startTime
     targetEndInput.value = baseInfo.endTime
+    sourceSelect.value = baseInfo.sourceId
     assignToMeBtn.click()
-    summaryInput.focus()
+
+    document.getElementById('components-multi-select').querySelector('.drop-menu').click()
+    const componentDropdownEle = document.getElementsByClassName('ajs-layer active')[0]
+
+    if (componentDropdownEle) {
+      componentDropdownEle.querySelector('.no-suggestions')?.querySelector('button')?.click()
+      const listContainer = componentDropdownEle.querySelector('.aui-last')
+      const componentItem = listContainer?.querySelector(`.aui-list-item-li-${currTaskInfo.componentText}`)
+      if (componentItem) {
+        listContainer.querySelectorAll('.aui-list-item.active').forEach(item => item.classList.remove('active')) 
+        componentItem.classList.add('active')
+      }
+      componentItem?.click() 
+    }
+
+    setTimeout(() => {
+      summaryInput.focus()
+    }, 200)
   }
 
   function editTask(baseInfo) {
